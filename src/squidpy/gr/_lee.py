@@ -17,8 +17,7 @@ from squidpy.gr._utils import _assert_connectivity_key, _assert_non_empty_sequen
 
 def lee(
     adata: AnnData | SpatialData,
-    n_pcs_pos: int = 25,
-    n_pcs_neg: int = 25,
+    n_pcs: int = 50,
     genes: str | Sequence[str] | None = None,
     key_added: str = "X_lee",
     connectivity_key: str = Key.obsp.spatial_conn(),
@@ -35,10 +34,8 @@ def lee(
     Parameters
     ----------
     %(adata)s
-    n_pcs_pos
-        Number of positive principal components to take. The covariance can have some strange structure so it can make sense to include negative PCs.
-    n_neg_pcs
-        Number of negative principal components to take. The covariance can have some strange structure so it can make sense to include negative PCs.
+    n_pcs
+        Number of principal components to take.
     genes
         A mask variable similar to squidpy.gr.spatial_autocorr. TODO implement
     key_added
@@ -95,23 +92,13 @@ def lee(
             cov[ileft:iright, jleft:jright] = XW.dot(Y)
             if jleft < ileft:  ### don't recompute if not the same block
                 cov[jleft:jright, ileft:iright] = cov[ileft:iright, jleft:jright].T
-    if n_pcs_pos == 0:
-        e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs_neg, which="SA")
-    elif n_pcs_neg == 0:
-        e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs_pos, which="LA")
-    else:
-        e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), 2 * max(n_pcs_pos, n_pcs_neg), which="BE")
-        if n_pcs_pos != n_pcs_neg:
-            idx = np.argsort(e_val)
-            idx = np.hstack((idx[:n_pcs_neg], idx[-n_pcs_pos:]))
-            e_val, e_vec = e_val[idx], e_vec[:, idx]
+    e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs_pos, which="LM")
     adata.varm[key_added] = e_vec
     adata.uns["lee"] = {
         "eigenvalues": e_val,
         "zero_center": zero_center,
         "scale": scale,
-        "n_pcs_pos": n_pcs_pos,
-        "n_pcs_neg": n_pcs_neg,
+        "n_pcs": n_pcs,
         "key_added": key_added,
         "connectivities_key": connectivity_key,
     }
