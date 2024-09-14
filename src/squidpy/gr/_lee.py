@@ -92,7 +92,7 @@ def lee(
             cov[ileft:iright, jleft:jright] = XW.dot(Y)
             if jleft < ileft:  ### don't recompute if not the same block
                 cov[jleft:jright, ileft:iright] = cov[ileft:iright, jleft:jright].T
-    e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs_pos, which="LM")
+    e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs, which="LM")
     adata.varm[key_added] = e_vec
     adata.uns["lee"] = {
         "eigenvalues": e_val,
