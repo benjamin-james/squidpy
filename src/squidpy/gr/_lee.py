@@ -51,6 +51,8 @@ def lee(
     _assert_connectivity_key(adata, connectivity_key)
     if genes is None:
         genes = adata.var_names.values
+        if "highly_variable" in adata.var.columns:
+            genes = genes[adata.var["highly_variable"].values]
     elif isinstance(genes, str) and genes in adata.var.columns and isinstance(adata.var[genes].dtype.type, (bool, np.bool_)):
         genes = adata.var.loc[adata.var[genes], :].index.values
     elif isinstance(genes, Sequence):
