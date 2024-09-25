@@ -69,7 +69,7 @@ def lee(
     cov = np.zeros((len(genes), len(genes)), dtype=np.float32)
     zero_center |= scale
     inv_sd = np.zeros(len(genes)) * np.nan
-    I = adata.var_names.get_indices(genes)
+    I = adata.var_names.get_indexer(genes)
     mu = np.ravel(adata.X.mean(0))[I]
     for ileft in tqdm(np.arange(0, len(I), batch_size), desc="Computing covariance"):
         iright = min(ileft + batch_size, len(I))
