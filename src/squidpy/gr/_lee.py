@@ -101,7 +101,8 @@ def lee(
                 cov[jleft:jright, ileft:iright] = cov[ileft:iright, jleft:jright].T
     e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs, which="LM")
     idx = np.argsort(-e_val)
-    adata.varm[key_added] = e_vec[:, idx]
+    adata.varm[key_added] = np.zeros((adata.shape[1], len(idx)), dtype=e_vec.dtype)
+    adata.varm[key_added][I, :] = e_vec[:, idx]
     adata.uns["lee"] = {
         "eigenvalues": e_val[idx],
         "zero_center": zero_center,
@@ -113,6 +114,8 @@ def lee(
     if scale:
         ### Pre-divide by using eigenvectors as dim is smaller
         e_vec = diags(inv_sd).dot(e_vec)
-    adata.obsm[key_added] = adata.X.dot(e_vec[:, idx])
+    adata.obsm[key_added] = adata.X[:, I].dot(e_vec[:, idx])
     if zero_center:
-        adata.obsm[key_added] -= mu[None, :] @ e_vec[:, idx]
+        diff = np.zeros(adata.shape[1])
+        diff[I] = mu[None, :] @ e_vec[:, idx]
+        adata.obsm[key_added] -= diff
