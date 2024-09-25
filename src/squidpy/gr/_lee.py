@@ -51,6 +51,10 @@ def lee(
     _assert_connectivity_key(adata, connectivity_key)
     if genes is None:
         genes = adata.var_names.values
+    elif isinstance(genes, str) and genes in adata.var.columns and isinstance(adata.var[genes].dtype, (bool, np.bool_)):
+        genes = adata.var.loc[adata.var[genes], :].index.values
+    elif isinstance(genes, Sequence):
+        genes = adata.var_names[adata.var_names.isin(genes)]
     else:
         raise NotImplementedError()
     genes = _assert_non_empty_sequence(genes, name="genes")
@@ -62,13 +66,15 @@ def lee(
     W.eliminate_zeros()
     W = W.T.dot(W) * (W.shape[0] / (np.ravel(W.sum(0)) ** 2).sum())  ### Denominator is 1(V'V)1=squared norm
     ### extract means
-    mu = np.ravel(adata.X.mean(0))
-    cov = np.zeros((adata.shape[1], adata.shape[1]), dtype=np.float32)
+    cov = np.zeros((len(genes), len(genes)), dtype=np.float32)
     zero_center |= scale
-    inv_sd = np.zeros(adata.shape[1]) * np.nan
-    for ileft in tqdm(np.arange(0, adata.shape[1], batch_size), desc="Computing covariance"):
-        iright = min(ileft + batch_size, adata.shape[1])
-        X = adata.X[:, ileft:iright].copy()
+    inv_sd = np.zeros(len(genes)) * np.nan
+    I = adata.var_names.get_indices(genes)
+    mu = np.ravel(adata.X.mean(0))[I]
+    for ileft in tqdm(np.arange(0, len(I), batch_size), desc="Computing covariance"):
+        iright = min(ileft + batch_size, len(I))
+        Ii = I[ileft:iright]
+        X = adata.X[:, Ii].copy()
         if issparse(X):
             X = X.todense().A
         X = np.asarray(X)
@@ -81,7 +87,8 @@ def lee(
         XW = W.dot(X).T
         for jleft in tqdm(np.arange(0, iright, batch_size), leave=False):
             jright = min(jleft + batch_size, iright)
-            Y = adata.X[:, jleft:jright].copy()
+            Ij = I[jleft:jright]
+            Y = adata.X[:, Ij].copy()
             if issparse(Y):
                 Y = Y.todense().A
             Y = np.asarray(Y)
