@@ -114,8 +114,6 @@ def lee(
     if scale:
         ### Pre-divide by using eigenvectors as dim is smaller
         e_vec = diags(inv_sd).dot(e_vec)
-    adata.obsm[key_added] = adata.X[:, I].dot(e_vec[:, idx])
+    adata.obsm[key_added] = adata.X[:, I].dot(e_vec[:, idx]).astype(e_vec.dtype)
     if zero_center:
-        diff = np.zeros(adata.shape[1])
-        diff[I] = mu[None, :] @ e_vec[:, idx]
-        adata.obsm[key_added] -= diff
+        adata.obsm[key_added] -= mu[None, :] @ e_vec[:, idx]
