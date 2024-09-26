@@ -103,12 +103,15 @@ def lee(
                 cov[jleft:jright, ileft:iright] = cov[ileft:iright, jleft:jright].T
     if scale:
         cov = diags(inv_sd).dot(diags(inv_sd).dot(cov).T)
-    e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs, which="LM")
+    cov = cov / (adata.shape[0] * 2 - 2)
+    total_var = np.sum(np.diag(cov))
+    e_val, e_vec = eigsh(cov, n_pcs, which="LM")
     idx = np.argsort(-e_val)
     adata.varm[key_added] = np.zeros((adata.shape[1], len(idx)), dtype=e_vec.dtype)
     adata.varm[key_added][I, :] = e_vec[:, idx]
     adata.uns["lee"] = {
-        "eigenvalues": e_val[idx],
+        "variance": e_val[idx],
+        "variance_ratio": e_val[idx] / total_var,
         "zero_center": zero_center,
         "scale": scale,
         "n_pcs": n_pcs,
