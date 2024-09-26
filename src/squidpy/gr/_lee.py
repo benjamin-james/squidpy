@@ -101,6 +101,8 @@ def lee(
             cov[ileft:iright, jleft:jright] = XW.dot(Y)
             if jleft < ileft:  ### don't recompute if not the same block
                 cov[jleft:jright, ileft:iright] = cov[ileft:iright, jleft:jright].T
+    if scale:
+        cov = diags(inv_sd).dot(diags(inv_sd).dot(cov).T)
     e_val, e_vec = eigsh(cov / (adata.shape[0] * 2 - 2), n_pcs, which="LM")
     idx = np.argsort(-e_val)
     adata.varm[key_added] = np.zeros((adata.shape[1], len(idx)), dtype=e_vec.dtype)
@@ -113,9 +115,9 @@ def lee(
         "key_added": key_added,
         "connectivities_key": connectivity_key,
     }
-    if scale:
-        ### Pre-divide by using eigenvectors as dim is smaller
-        e_vec = diags(inv_sd).dot(e_vec)
+    # if scale:
+    #     ### Pre-divide by using eigenvectors as dim is smaller
+    #     e_vec = diags(inv_sd).dot(e_vec)
     adata.obsm[key_added] = adata.X[:, I].dot(e_vec[:, idx]).astype(e_vec.dtype)
     if zero_center:
         adata.obsm[key_added] -= mu[None, :] @ e_vec[:, idx]
